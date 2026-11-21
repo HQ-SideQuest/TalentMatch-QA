@@ -73,8 +73,10 @@ test('TC-W11: cvText = null -> throws TypeError', () => {
   assert.throws(() => scoreCV(null, fullJob), TypeError);
 });
 
-test('TC-W12: an empty keyword always matches -> 400', () => {
-  assert.equal(scoreCV('anything', { skills: [''] }).skills, 400);
+test('TC-W12: a blank skill keyword earns 0 points', () => {
+  const result = scoreCV('anything', { skills: [''] });
+
+  assert.equal(result.skills, 0);
 });
 
 test('TC-W13: 1 keyword, found -> 400', () => {

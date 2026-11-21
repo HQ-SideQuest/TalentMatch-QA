@@ -41,7 +41,9 @@ const scoreCV = (cvText, requirements) => {
   };
 
   for (const category in categoryWeights) {
-    const keywords = requirements[category] || [];
+    const keywords = (requirements[category] || []).filter(
+  (keyword) => keyword.trim() !== ''
+);
     if (keywords.length === 0) continue;
 
     const pointsPerKeyword = categoryWeights[category] / keywords.length;
