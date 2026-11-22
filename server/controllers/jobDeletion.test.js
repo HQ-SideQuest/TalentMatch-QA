@@ -490,3 +490,30 @@ test('redirected uploads directory is rejected before unlink', async (t) => {
   await assert.rejects(removeCV(context.applications[0].cvPath), /redirected uploads/);
   await fs.access(resolveCVPath(context.applications[0].cvPath));
 });
+
+for (const [total, expectedStatus] of [
+  [699, 'rejected'],
+  [700, 'shortlisted']
+]) {
+  test(`submitApplication saves a score of ${total} as ${expectedStatus}`, async (t) => {
+    await setup(t, 0);
+    t.mock.method(processor, 'extractText', async () => 'Sample CV text');
+    t.mock.method(processor, 'scoreCV', () => ({ total }));
+    const create = t.mock.method(Candidate, 'create', async (data) => data);
+
+    const req = {
+      body: { jobId: 'job-1', name: 'Test Candidate', email: 'test@example.com' },
+      file: { path: path.join(uploadsDirectory, 'boundary-test-cv.pdf') }
+    };
+    const res = response();
+
+    await submitApplication(req, res);
+
+    assert.equal(res.statusCode, 201);
+    assert.equal(create.mock.callCount(), 1);
+
+    const [savedApplication] = create.mock.calls[0].arguments;
+    assert.equal(savedApplication.scores.total, total);
+    assert.equal(savedApplication.status, expectedStatus);
+  });
+}
