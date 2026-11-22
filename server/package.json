@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node --test controllers/authController.test.js controllers/jobController.test.js controllers/jobDeletion.test.js controllers/candidateAccess.test.js controllers/candidateDeletion.test.js",
+    "test": "node --test controllers/authController.test.js controllers/jobController.test.js controllers/jobDeletion.test.js controllers/candidateAccess.test.js controllers/candidateDeletion.test.js controllers/securityHardening.test.js",
     "start": "node server.js",
     "seed:demo": "node scripts/seed-demo.js",
     "dev": "nodemon server.js"

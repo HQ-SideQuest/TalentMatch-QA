@@ -77,8 +77,9 @@ export default function Apply() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-[#14181F] block mb-1">Full Name</label>
+              <label htmlFor="apply-name" className="text-sm font-medium text-[#14181F] block mb-1">Full Name</label>
               <input
+                id="apply-name"
                 type="text"
                 required
                 value={name}
@@ -88,8 +89,9 @@ export default function Apply() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-[#14181F] block mb-1">Email</label>
+              <label htmlFor="apply-email" className="text-sm font-medium text-[#14181F] block mb-1">Email</label>
               <input
+                id="apply-email"
                 type="email"
                 required
                 value={email}
@@ -99,8 +101,9 @@ export default function Apply() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-[#14181F] block mb-1">Upload CV</label>
+              <label htmlFor="apply-cv" className="text-sm font-medium text-[#14181F] block mb-1">Upload CV</label>
               <input
+                id="apply-cv"
                 type="file"
                 required
                 accept=".pdf,.docx"

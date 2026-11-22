@@ -23,6 +23,14 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-const upload = multer({ storage, fileFilter });
+const MAX_CV_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: MAX_CV_SIZE_BYTES, files: 1 }
+});
+
+upload.MAX_CV_SIZE_BYTES = MAX_CV_SIZE_BYTES;
 
 module.exports = upload;

@@ -31,8 +31,9 @@ export default function HRLogin() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-sm font-medium text-[#14181F] block mb-1">Email</label>
+            <label htmlFor="login-email" className="text-sm font-medium text-[#14181F] block mb-1">Email</label>
             <input
+              id="login-email"
               type="email"
               required
               value={email}
@@ -42,8 +43,9 @@ export default function HRLogin() {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-[#14181F] block mb-1">Password</label>
+            <label htmlFor="login-password" className="text-sm font-medium text-[#14181F] block mb-1">Password</label>
             <input
+              id="login-password"
               type="password"
               required
               value={password}
