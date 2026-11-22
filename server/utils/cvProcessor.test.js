@@ -1,6 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { scoreCV } = require('./cvProcessor');
+const { scoreCV, extractText } = require('./cvProcessor');
+const path = require('node:path');
 
 test('gives 200 points when one of two required skills matches', () => {
   const result = scoreCV('JavaScript', {
@@ -35,4 +36,19 @@ test('does not award Java points when the CV lists only JavaScript', () => {
   });
 
   assert.equal(result.skills, 0);
+});
+
+test('extractText rejects an unsupported CV file type', async () => {
+  await assert.rejects(
+    () => extractText('sample-cv.txt'),
+    /Unsupported file type/
+  );
+});
+
+test('extractText reads text from a Word CV', async () => {
+  const filePath = path.join(__dirname, 'fixtures', 'sample-cv.docx');
+
+  const actual = await extractText(filePath);
+
+  assert.equal(actual.trim(), 'JavaScript and React');
 });
