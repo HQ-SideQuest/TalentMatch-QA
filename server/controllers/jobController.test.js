@@ -147,3 +147,60 @@ test('update: rejects another company before modifying or saving the job', async
   assert.deepEqual(documentData, before);
   assert.deepEqual(context.stored, before);
 });
+
+// SEC-01: malformed public IDs must not query MongoDB or expose its internals.
+const { getJob } = require('./jobController');
+const publicJobId = '71de00000000000000000021';
+
+function publicJobResponse() {
+  return {
+    statusCode: 200,
+    status(code) { this.statusCode = code; return this; },
+    json(body) { this.body = body; return this; }
+  };
+}
+
+for (const id of ['not-an-id', '0123456789ab', 'g'.repeat(24), 'a'.repeat(23), 'a'.repeat(25)]) {
+  test(`SEC-01: malformed job ID ${id} returns a generic 400 without querying`, async (t) => {
+    const query = t.mock.method(Job, 'findById', () => {
+      throw new Error('Cast to ObjectId failed at _id for model Job');
+    });
+    const res = publicJobResponse();
+    await getJob({ params: { id } }, res);
+    assert.equal(res.statusCode, 400);
+    assert.deepEqual(res.body, { message: 'Invalid job ID' });
+    assert.equal(query.mock.callCount(), 0);
+  });
+}
+
+test('SEC-01: a valid existing ID returns its populated job', async (t) => {
+  const job = { _id: publicJobId, title: 'Fixture role', company: { name: 'Fixture company' } };
+  const populate = t.mock.fn(async () => job);
+  const query = t.mock.method(Job, 'findById', () => ({ populate }));
+  const res = publicJobResponse();
+  await getJob({ params: { id: publicJobId } }, res);
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(res.body, job);
+  assert.deepEqual(query.mock.calls[0].arguments, [publicJobId]);
+  assert.deepEqual(populate.mock.calls[0].arguments, ['company', 'name description']);
+});
+
+test('SEC-01: a well-formed nonexistent ID still returns 404', async (t) => {
+  t.mock.method(Job, 'findById', () => ({ populate: async () => null }));
+  const res = publicJobResponse();
+  await getJob({ params: { id: '999999999999999999999999' } }, res);
+  assert.equal(res.statusCode, 404);
+  assert.deepEqual(res.body, { message: 'Job not found' });
+});
+
+test('SEC-01: unexpected database failures stay in server logs', async (t) => {
+  const failure = new Error('Internal database details that must not reach the client');
+  const logged = t.mock.method(console, 'error', () => {});
+  t.mock.method(Job, 'findById', () => ({ populate: async () => { throw failure; } }));
+  const res = publicJobResponse();
+  await getJob({ params: { id: publicJobId } }, res);
+  assert.equal(res.statusCode, 500);
+  assert.deepEqual(res.body, { message: 'Server error' });
+  assert.equal(logged.mock.callCount(), 1);
+  assert.equal(logged.mock.calls[0].arguments[1], failure);
+});
