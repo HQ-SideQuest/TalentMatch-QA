@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createJob } from '../services/api';
 import Navbar from '../components/Navbar';
-import TagInput from '../components/TagInput';
+import JobFormFields from '../components/JobFormFields';
 import BackLink from '../components/BackLink';
 
 export default function CreateJob() {
@@ -65,29 +65,13 @@ export default function CreateJob() {
           <h1 className="text-2xl font-bold text-[#14181F] mt-4 mb-6">Create New Job</h1>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="text-sm font-medium text-[#14181F] block mb-1">Job Title</label>
-              <input
-                type="text" required value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full border border-[#E5E8EE] rounded-lg px-4 py-2 text-sm outline-none focus:border-[#2952E3]"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-[#14181F] block mb-1">Description</label>
-              <textarea
-                required value={description} rows={3}
-                onChange={(e) => setDescription(e.target.value)}
-                className="w-full border border-[#E5E8EE] rounded-lg px-4 py-2 text-sm outline-none focus:border-[#2952E3]"
-              />
-            </div>
-
-            <TagInput label="Skills" tags={skills} setTags={setSkills} />
-            <TagInput label="Education" tags={education} setTags={setEducation} />
-            <TagInput label="Experience" tags={experience} setTags={setExperience} />
-            <TagInput label="Certifications" tags={certifications} setTags={setCertifications} />
-            <TagInput label="Soft Skills" tags={softSkills} setTags={setSoftSkills} />
+            <JobFormFields
+              values={{ title, description, skills, education, experience, certifications, softSkills }}
+              setters={{
+                title: setTitle, description: setDescription, skills: setSkills, education: setEducation,
+                experience: setExperience, certifications: setCertifications, softSkills: setSoftSkills
+              }}
+            />
 
             {status === 'error' && <p className="text-sm text-red-600">{error}</p>}
 

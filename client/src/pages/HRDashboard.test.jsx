@@ -253,3 +253,13 @@ test('late candidate response from a previous job cannot overwrite the selected 
   expect(screen.queryByText(candidate.name)).not.toBeInTheDocument();
   expect(screen.getByText('Second Fixture')).toBeInTheDocument();
 });
+
+test.each([
+  [401, 'Your session has expired. Please sign in again.'],
+  [500, 'Your jobs could not be loaded. Please refresh the page.']
+])('shows an error instead of failing silently when loading jobs returns %i', async (status, message) => {
+  getMyJobs.mockRejectedValue({ response: { status } });
+  render(<HRDashboard />);
+  expect(await screen.findByRole('alert')).toHaveTextContent(message);
+  expect(getCandidates).not.toHaveBeenCalled();
+});

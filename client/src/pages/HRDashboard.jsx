@@ -12,6 +12,7 @@ export default function HRDashboard() {
   const dropdownRef = useRef(null);
   const [openingCV, setOpeningCV] = useState(null);
   const [cvError, setCVError] = useState('');
+  const [jobsError, setJobsError] = useState('');
   const cvBusy = useRef(false);
   const cvURLs = useRef(new Map());
   const [deletingId, setDeletingId] = useState(null);
@@ -128,10 +129,16 @@ export default function HRDashboard() {
       window.location.href = '/hr-login';
       return;
     }
-    getMyJobs().then((res) => {
-      setJobs(res.data);
-      if (res.data.length > 0) setSelectedJob(res.data[0]._id);
-    });
+    getMyJobs()
+      .then((res) => {
+        setJobs(res.data);
+        if (res.data.length > 0) setSelectedJob(res.data[0]._id);
+      })
+      .catch((error) => {
+        setJobsError(error.response?.status === 401
+          ? 'Your session has expired. Please sign in again.'
+          : 'Your jobs could not be loaded. Please refresh the page.');
+      });
   }, []);
 
   useEffect(() => {
@@ -184,9 +191,10 @@ export default function HRDashboard() {
         </div>
 
         <div className="mb-6 relative w-72" ref={dropdownRef}>
-          <label className="text-sm font-medium text-[#14181F] block mb-1">Select Job</label>
+          <span id="hr-job-select-label" className="text-sm font-medium text-[#14181F] block mb-1">Select Job</span>
           <button
             type="button"
+            aria-describedby="hr-job-select-label"
             disabled={deletingId !== null}
             onClick={() => setDropdownOpen(!dropdownOpen)}
             className="w-full flex items-center justify-between border border-[#E5E8EE] rounded-lg px-4 py-2 text-sm bg-white text-left"
@@ -223,6 +231,7 @@ export default function HRDashboard() {
           )}
         </div>
 
+        {jobsError && <p role="alert" className="text-sm text-red-600 mb-4">{jobsError}</p>}
         {cvError && <p role="alert" className="text-sm text-red-600 mb-4">{cvError}</p>}
         {deletionFeedback && <p role={deletionFeedback.error ? 'alert' : 'status'} className={`text-sm mb-4 ${deletionFeedback.error ? 'text-red-600' : 'text-green-700'}`}>{deletionFeedback.message}</p>}
         <div className="bg-white border border-[#E5E8EE] rounded-xl overflow-hidden">

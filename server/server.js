@@ -8,9 +8,14 @@ if (require.main === module) dotenv.config(); // activates dotenv for npm start
 const app = express(); // creates express application (like a car)
 //express is the factory
 //express() is building car
+app.disable('x-powered-by'); // do not advertise the Express version to clients
 
 // Middleware
-app.use(cors());
+// Only the TalentMatch client may call the API from a browser (set CLIENT_ORIGIN for other hosts).
+const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:3000')
+  .split(',')
+  .map((origin) => origin.trim());
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 
 // Routes
