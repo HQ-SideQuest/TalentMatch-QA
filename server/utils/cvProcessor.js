@@ -41,16 +41,31 @@ const scoreCV = (cvText, requirements) => {
   };
 
   for (const category in categoryWeights) {
-    const keywords = requirements[category] || [];
+    const keywords = (requirements[category] || []).filter(
+  (keyword) => keyword.trim() !== ''
+);
     if (keywords.length === 0) continue;
 
     const pointsPerKeyword = categoryWeights[category] / keywords.length;
     let matchCount = 0;
 
     for (const keyword of keywords) {
-      if (text.includes(keyword.toLowerCase())) {
-        matchCount++;
-      }
+     const normalizedKeyword = keyword.toLowerCase();
+let matches = text.includes(normalizedKeyword);
+
+if (category === 'skills' && normalizedKeyword !== '') {
+  const escapedKeyword = normalizedKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = new RegExp(
+    `(^|[^\\p{L}\\p{N}_])${escapedKeyword}(?=$|[^\\p{L}\\p{N}_])`,
+    'u'
+  );
+
+  matches = pattern.test(text);
+}
+
+if (matches) {
+  matchCount++;
+}
     }
 
     scores[category] = Math.round(pointsPerKeyword * matchCount);
