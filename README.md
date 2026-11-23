@@ -92,7 +92,7 @@ JWT_SECRET=replace-with-your-own-long-random-secret
 PORT=5001
 ```
 
-These are example values and placeholders, not deployment credentials. `MONGO_URI` and `JWT_SECRET` must be configured; `PORT` defaults to `5000`. Do not commit `.env` files or secrets.
+These are example values and placeholders, not deployment credentials. `MONGO_URI` and `JWT_SECRET` must be configured; `PORT` defaults to `5000`. The API only accepts browser requests from `CLIENT_ORIGIN` (default `http://localhost:3000`); set it, comma-separated for several, if the frontend runs on another address. Do not commit `.env` files or secrets.
 
 Ensure `server/uploads` exists and is writable before accepting applications. Multer uses this directory; the application does not create it automatically. From the repository root, this cross-platform command creates it if needed:
 
