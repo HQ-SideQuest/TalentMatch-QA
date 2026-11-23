@@ -74,6 +74,7 @@ test('TC-W11: cvText = null -> throws TypeError', () => {
 });
 
 test('TC-W12: a blank skill keyword earns 0 points', () => {
+  // A blank requirement names no skill, so it cannot match the CV or earn points.
   const result = scoreCV('anything', { skills: [''] });
 
   assert.equal(result.skills, 0);

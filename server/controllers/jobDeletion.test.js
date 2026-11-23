@@ -498,7 +498,9 @@ for (const [total, expectedStatus] of [
   test(`submitApplication saves a score of ${total} as ${expectedStatus}`, async (t) => {
     await setup(t, 0);
     t.mock.method(processor, 'extractText', async () => 'Sample CV text');
+    // Use an exact score to test the cutoff without relying on CV scoring.
     t.mock.method(processor, 'scoreCV', () => ({ total }));
+    // Capture what the controller would save without writing to the database.
     const create = t.mock.method(Candidate, 'create', async (data) => data);
 
     const req = {
@@ -514,6 +516,7 @@ for (const [total, expectedStatus] of [
 
     const [savedApplication] = create.mock.calls[0].arguments;
     assert.equal(savedApplication.scores.total, total);
+    // The cutoff is 700, so 699 is rejected and exactly 700 is shortlisted.
     assert.equal(savedApplication.status, expectedStatus);
   });
 }
