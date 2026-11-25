@@ -1,0 +1,12 @@
+{
+  "name": "talentmatch-member3-qa",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Isolated Postman API testing for EC4206 Member 3",
+  "engines": { "node": ">=20.19.0" },
+  "scripts": {
+    "test": "node run-api.cjs",
+    "serve": "node run-api.cjs --serve"
+  },
+  "devDependencies": { "newman": "6.2.3" }
+}

@@ -5,3 +5,6 @@ uploads/
 client/build/
 coverage/
 .scannerwork/
+
+# Generated CI reports
+server/reports/

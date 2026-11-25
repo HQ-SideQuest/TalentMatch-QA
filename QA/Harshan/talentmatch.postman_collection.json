@@ -1,0 +1,496 @@
+{
+  "info": {
+    "name": "TalentMatch QA - Harshan - Automated",
+    "description": "Automated versions of the manually studied API cases. Run the complete collection in order against the isolated server on port 5011. The server-identification request blocks writes to ordinary/demo servers. Each run registers two new fictional companies and HR accounts, then creates one disposable job. Runtime tokens and IDs are local run variables, not exported credentials. Start with npm run serve --prefix QA/Harshan. Manual report screenshots refer to the earlier port-5001 runs, not these new fixture accounts.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// All URLs and credentials here are for the dedicated local test server.",
+          "const isStart = pm.info.requestName === \"API-00 - Public jobs and test-server verification\";",
+          "if (isStart) { [\"isolatedConfirmed\", \"tokenA\", \"tokenB\", \"companyA\", \"jobId\"].forEach(k => pm.variables.unset(k)); }",
+          "if (!/^http:\\/\\/(127\\.0\\.0\\.1|localhost):[0-9]+\\/api$/.test(pm.variables.get(\"baseUrl\") || \"\")) {",
+          "  pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error(\"Only the local isolated test API is allowed\");",
+          "}",
+          "if (!isStart && pm.variables.get(\"isolatedConfirmed\") !== true) {",
+          "  pm.execution.setNextRequest(null); pm.execution.skipRequest(); throw new Error(\"Run the complete collection from API-00 against the isolated server\");",
+          "}",
+          "if (pm.info.requestName === \"SETUP-01 Register company A and its HR\") {",
+          "  const runId = pm.variables.replaceIn(\"{{$guid}}\");",
+          "  pm.variables.set(\"runId\", runId);",
+          "  pm.variables.set(\"emailA\", \"qa-a-\" + runId + \"@example.test\");",
+          "  pm.variables.set(\"emailB\", \"qa-b-\" + runId + \"@example.test\");",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "API-00 - Public jobs and test-server verification",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/jobs"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Response is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"));",
+              "var qaResponse = pm.response.json();",
+              "pm.test(\"Dedicated Member 3 server is running\", () => pm.expect(pm.response.headers.get(\"X-TalentMatch-Test-Instance\")).to.eql(\"member3-isolated\"));",
+              "if (pm.response.code === 200 && pm.response.headers.get(\"X-TalentMatch-Test-Instance\") === \"member3-isolated\") { pm.variables.set(\"isolatedConfirmed\", true); } else { pm.execution.setNextRequest(null); }",
+              "pm.test(\"Jobs are returned as an array\", () => pm.expect(qaResponse).to.be.an(\"array\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "SETUP-01 Register company A and its HR",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/register",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"QA Automation A\",\n  \"email\": \"{{emailA}}\",\n  \"password\": \"{{password}}\",\n  \"companyName\": \"Member3 {{runId}} A\",\n  \"companyDescription\": \"Disposable automated API test company.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+              "pm.test(\"Response is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"));",
+              "var qaResponse = pm.response.json();",
+              "pm.test(\"Account is linked to the new company\", () => pm.expect(qaResponse.user.companyId).to.eql(qaResponse.user.company._id));",
+              "pm.test(\"Password hash is not returned\", () => pm.expect(qaResponse.user).not.to.have.property(\"password\"));",
+              "if (pm.response.code === 201) { pm.variables.set(\"companyA\", qaResponse.user.companyId); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "SETUP-02 Register a different company B",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/register",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"QA Automation B\",\n  \"email\": \"{{emailB}}\",\n  \"password\": \"{{password}}\",\n  \"companyName\": \"Member3 {{runId}} B\",\n  \"companyDescription\": \"Disposable automated API test company.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+              "pm.test(\"Response is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"));",
+              "var qaResponse = pm.response.json();",
+              "pm.test(\"Companies are distinct\", () => pm.expect(qaResponse.user.companyId).not.to.eql(pm.variables.get(\"companyA\")));",
+              "if (pm.response.code === 201) { pm.variables.set(\"tokenB\", qaResponse.token); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "API-01 Wrong password is rejected",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{emailA}}\",\n  \"password\": \"This-is-the-wrong-password!\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+              "pm.test(\"Response is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"));",
+              "var qaResponse = pm.response.json();",
+              "pm.test(\"Generic credential error\", () => pm.expect(qaResponse.message).to.eql(\"Invalid credentials\"));",
+              "pm.test(\"No token is issued\", () => pm.expect(qaResponse).not.to.have.property(\"token\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "API-02 Valid HR login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{emailA}}\",\n  \"password\": \"{{password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Response is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"));",
+              "var qaResponse = pm.response.json();",
+              "pm.test(\"JWT has three encoded parts\", () => pm.expect(qaResponse.token.split(\".\")).to.have.lengthOf(3));",
+              "pm.test(\"Correct company is returned\", () => pm.expect(qaResponse.user.company._id).to.eql(pm.variables.get(\"companyA\")));",
+              "pm.test(\"Password hash is not returned\", () => pm.expect(qaResponse.user).not.to.have.property(\"password\"));",
+              "if (pm.response.code === 200) { pm.variables.set(\"tokenA\", qaResponse.token); }"
+            ]
+          }
+        }
+      ],
+      "id": "d3783e10-08f8-49eb-8fa9-2bd7b7da5fb5"
+    },
+    {
+      "name": "API-03 Anonymous job creation is rejected",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/jobs",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"QA Automation Engineer\",\n  \"description\": \"Fictional job used only by the QA Automation collection.\",\n  \"requirements\": {\n    \"skills\": [\n      \"Postman\",\n      \"JavaScript\"\n    ]\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));",
+              "pm.test(\"Response is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"));",
+              "var qaResponse = pm.response.json();",
+              "pm.test(\"Token is required\", () => pm.expect(qaResponse.message).to.eql(\"Not authorized, no token\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "API-04 Invalid token is rejected",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{invalidToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/jobs",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"QA Automation Engineer\",\n  \"description\": \"Fictional job used only by the QA Automation collection.\",\n  \"requirements\": {\n    \"skills\": [\n      \"Postman\",\n      \"JavaScript\"\n    ]\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 401\", () => pm.response.to.have.status(401));",
+              "pm.test(\"Response is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"));",
+              "var qaResponse = pm.response.json();",
+              "pm.test(\"Token verification failed\", () => pm.expect(qaResponse.message).to.eql(\"Not authorized, token failed\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "API-05 HR creates a valid job",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/jobs",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"QA Automation Engineer\",\n  \"description\": \"Fictional job used only by the QA Automation collection.\",\n  \"requirements\": {\n    \"skills\": [\n      \"Postman\",\n      \"JavaScript\"\n    ]\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+              "pm.test(\"Response is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"));",
+              "var qaResponse = pm.response.json();",
+              "pm.test(\"Job belongs to company A\", () => pm.expect(qaResponse.company).to.eql(pm.variables.get(\"companyA\")));",
+              "pm.test(\"Title and skills match submitted values\", () => { pm.expect(qaResponse.title).to.eql(\"QA Automation Engineer\"); pm.expect(qaResponse.requirements.skills).to.eql([\"Postman\", \"JavaScript\"]); });",
+              "if (pm.response.code === 201) { pm.variables.set(\"jobId\", qaResponse._id); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "API-06 Public job list includes the created job",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/jobs"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Response is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"));",
+              "var qaResponse = pm.response.json();",
+              "pm.test(\"Jobs are returned as an array\", () => pm.expect(qaResponse).to.be.an(\"array\"));",
+              "pm.test(\"Created job and company are present\", () => { const found = qaResponse.find(j => j._id === pm.variables.get(\"jobId\")); pm.expect(found).to.exist; pm.expect(found.company._id).to.eql(pm.variables.get(\"companyA\")); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "API-07 HR sees its company jobs",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA}}"
+          }
+        ],
+        "url": "{{baseUrl}}/jobs/my-jobs"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Response is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"));",
+              "var qaResponse = pm.response.json();",
+              "pm.test(\"Created job is listed\", () => pm.expect(qaResponse.some(j => j._id === pm.variables.get(\"jobId\"))).to.eql(true));",
+              "pm.test(\"Every result belongs to company A\", () => qaResponse.forEach(j => pm.expect(j.company._id).to.eql(pm.variables.get(\"companyA\"))));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "API-08 Too-short job title is rejected",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/jobs",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"ab\",\n  \"description\": \"Fictional job used only by the QA Automation collection.\",\n  \"requirements\": {\n    \"skills\": [\n      \"Postman\",\n      \"JavaScript\"\n    ]\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+              "pm.test(\"Response is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"));",
+              "var qaResponse = pm.response.json();",
+              "pm.test(\"Validation explains the title requirement\", () => pm.expect(qaResponse.message).to.eql(\"Job title must be a string with at least 3 non-padding characters\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "API-09 Company B cannot edit company A job",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenB}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/jobs/{{jobId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Unauthorized replacement\",\n  \"description\": \"Fictional job used only by the QA Automation collection.\",\n  \"requirements\": {\n    \"skills\": [\n      \"Postman\",\n      \"JavaScript\"\n    ]\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));",
+              "pm.test(\"Response is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"));",
+              "var qaResponse = pm.response.json();",
+              "pm.test(\"Ownership restriction is enforced\", () => pm.expect(qaResponse.message).to.eql(\"Not authorized to edit this job\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "API-10 Rejected edit leaves the job unchanged",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/jobs/{{jobId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Response is JSON\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\"));",
+              "var qaResponse = pm.response.json();",
+              "pm.test(\"Job title is unchanged\", () => pm.expect(qaResponse.title).to.eql(\"QA Automation Engineer\"));",
+              "pm.test(\"Company ownership is unchanged\", () => pm.expect(qaResponse.company._id).to.eql(pm.variables.get(\"companyA\")));"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:5011/api"
+    },
+    {
+      "key": "password",
+      "value": "Harshan-Test-Only!2026"
+    },
+    {
+      "key": "invalidToken",
+      "value": "invalid-test-token"
+    }
+  ]
+}

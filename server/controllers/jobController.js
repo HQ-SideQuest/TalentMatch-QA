@@ -1,4 +1,5 @@
 const Job = require('../models/Job');
+const { isObjectIdOrHexString } = require('mongoose');
 const Company = require('../models/Company');
 const Candidate = require('../models/Candidate');
 const { withJobLock } = require('../utils/jobLifecycle');
@@ -97,15 +98,18 @@ const getMyJobs = async (req, res) => {
 
 // Get single job
 const getJob = async (req, res) => {
-  try {     //const job = await Job.findById(req.params.id) - Finds a single job by its ID.
+  if (!isObjectIdOrHexString(req.params.id)) {
+    return res.status(400).json({ message: 'Invalid job ID' });
+  }
+  try {
     const job = await Job.findById(req.params.id).populate('company', 'name description');
     if (!job || job.isDeleting) {
       return res.status(404).json({ message: 'Job not found' });
     }
     res.status(200).json(job);
-
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Unable to retrieve job:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 

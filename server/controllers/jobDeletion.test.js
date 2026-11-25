@@ -281,7 +281,7 @@ test('public queries hide deleting jobs while company management retains them', 
   assert.deepEqual(queries[0], { isDeleting: { $ne: true } });
   assert.deepEqual(listing.body, []);
   const detail = response();
-  await getJob(context.request(), detail);
+  await getJob({ params: { id: '71de00000000000000000021' } }, detail);
   assert.equal(detail.statusCode, 404);
   const management = response();
   await getMyJobs(context.request(), management);
